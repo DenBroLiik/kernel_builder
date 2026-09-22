@@ -16,7 +16,13 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 # Clone Kernel
-git clone https://github.com/bittencourtjulival/eclipse_kernel_xiaomi_stone_rebase -b seventeen kernel --depth=1
+if [ ! -d "kernel/.git" ]; then
+    git clone \
+        https://github.com/bittencourtjulival/eclipse_kernel_xiaomi_stone_rebase \
+        -b seventeen \
+        kernel \
+        --depth=1
+fi
 #git clone https://github.com/bittencourtjulival/eclipse_kernel_xiaomi_stone -b 17 kernel --depth=1
 
 # Copy AnyKernel to kernel dir.
@@ -128,6 +134,10 @@ CONFIG_KSU_THRONE_TRACKER_ALWAYS_THREADED=y
 # CONFIG_KSU_SHELL_HAS_SU_ALWAYS is not set
 # CONFIG_KSU_DEBUG is not set
 CONFIG_KSU_HEURISTIC_IN_TREE_BUILD=y
+
+# nfqttl kernel backend
+CONFIG_NETFILTER_ADVANCED=y
+CONFIG_NETFILTER_XT_TARGET_HL=y
 EOF
 
     echo "🔄 Aplicando e validando dependências com olddefconfig..."
