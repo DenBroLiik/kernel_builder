@@ -57,9 +57,9 @@ KERNEL_NAME="Eclipse"    # Kernel name
 KERNEL_DEFCONFIG="${DEVICE_CODENAME}_defconfig"
 ANYKERNEL3_DIR=$PWD/AnyKernel3/
 if [ "$KernelSU" = "y" ]; then
-        FINAL_KERNEL_ZIP="${KERNEL_NAME}-Kernel-KSU-${DEVICE_CODENAME}-$(date '+%Y%m%d').zip"
+        FINAL_KERNEL_ZIP="${KERNEL_NAME}-Kernel-KSU-${DEVICE_CODENAME}-$(date '+%Y%m%d_%H%M').zip"
 else
-    FINAL_KERNEL_ZIP="${KERNEL_NAME}-Kernel-${DEVICE_CODENAME}-$(date '+%Y%m%d').zip"
+    FINAL_KERNEL_ZIP="${KERNEL_NAME}-Kernel-${DEVICE_CODENAME}-$(date '+%Y%m%d_%H_%M').zip"
 fi
 
 # Set Build Status (Change to "STABLE/TESTING" if needed)
