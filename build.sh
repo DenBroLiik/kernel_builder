@@ -81,7 +81,7 @@ fi
 
 export ARCH=arm64
 export KBUILD_BUILD_HOST=$BUILD_HOSTNAME
-export KBUILD_BUILD_USER="Julival"
+export KBUILD_BUILD_USER="$USER"
 export KBUILD_COMPILER_STRING="$COMPILER_NAME"
 
 # Clone Clang if not found
@@ -134,10 +134,6 @@ CONFIG_KSU_THRONE_TRACKER_ALWAYS_THREADED=y
 # CONFIG_KSU_SHELL_HAS_SU_ALWAYS is not set
 # CONFIG_KSU_DEBUG is not set
 CONFIG_KSU_HEURISTIC_IN_TREE_BUILD=y
-
-# nfqttl kernel backend
-CONFIG_NETFILTER_ADVANCED=y
-CONFIG_NETFILTER_XT_TARGET_HL=y
 EOF
 
     echo "🔄 Aplicando e validando dependências com olddefconfig..."
