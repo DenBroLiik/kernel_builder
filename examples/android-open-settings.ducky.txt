@@ -1,6 +1,0 @@
-REM Android USB HID test: open Settings using Meta+I.
-REM Unlock the receiving phone and enable its USB host/OTG mode first.
-REM The sender must already be configured as a USB HID keyboard.
-DELAY 2000
-GUI i
-DELAY 500

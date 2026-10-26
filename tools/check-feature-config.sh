@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 config=${1:?Укажите путь к итоговой конфигурации ядра}
-source "$(dirname -- "${BASH_SOURCE[0]}")/features.sh"
-if [[ -n ${2:-} ]]; then feature_load "$2"; fi
 required=(
     USB_OTG USB_DWC3 USB_DWC3_MSM TCPC_CLASS TCPC_RT1711H
     CFG80211 QCA_CLD_WLAN MSM_BT_POWER USB_CONFIGFS
     USB_STORAGE USB_UAS SND_USB_AUDIO USB_VIDEO_CLASS
     VETH BRIDGE
-    WIREGUARD TUN ZRAM PSTORE PSTORE_RAM PSTORE_CONSOLE
+    CPU_FREQ_GOV_SCHEDUTIL CPU_IDLE CC_OPTIMIZE_FOR_PERFORMANCE
+    WIREGUARD TUN ZRAM ZRAM_WRITEBACK PSTORE PSTORE_RAM PSTORE_CONSOLE
     THERMAL THERMAL_TSENS QTI_BCL_PMIC5 QTI_BCL_SOC_DRIVER
     SECURITY_SELINUX SECCOMP SECCOMP_FILTER DM_VERITY FS_VERITY
     UNMAP_KERNEL_AT_EL0 HARDEN_BRANCH_PREDICTOR MITIGATE_SPECTRE_BRANCH_HISTORY
@@ -18,6 +17,11 @@ disabled=(
     USB_EHSET_TEST_FIXTURE USB_LINK_LAYER_TEST USB_DUMMY_HCD THERMAL_EMULATION
     CIFS_ALLOW_INSECURE_LEGACY CIFS_WEAK_PW_HASH NFS_V2
     USER_NS MEMCG MEMCG_SWAP ANDROID_SIMPLE_LMK
+    MAC80211 BT_HCIBTUSB BT_ATH3K BT_RFCOMM BT_BNEP BT_HIDP
+    CIFS NFS_FS SQUASHFS PID_NS IPC_NS CGROUP_PIDS CGROUP_DEVICE
+    USB_SERIAL USB_ACM USB_PRINTER USB_NET_QMI_WWAN
+    USB_CONFIGFS_F_HID USB_CONFIGFS_F_MIDI USB_CONFIGFS_MASS_STORAGE
+    ZRAM_MEMORY_TRACKING
 )
 failed=0
 if grep -qx 'CONFIG_KSU=y' "$config"; then
@@ -42,19 +46,5 @@ for symbol in "${disabled[@]}"; do
         failed=1
     fi
 done
-for name in "${feature_names[@]}"; do
-    key=FEATURE_$name
-    for symbol in $(feature_symbols "$name"); do
-        if [[ ${!key} == 1 ]]; then
-            if ! grep -qx "CONFIG_$symbol=y" "$config"; then
-                echo "Выбрана возможность $name, но CONFIG_$symbol не включён." >&2
-                failed=1
-            fi
-        elif grep -qE "^CONFIG_$symbol=[ym]$" "$config"; then
-            echo "Возможность $name отключена, но CONFIG_$symbol остался включён." >&2
-            failed=1
-        fi
-    done
-done
 (( failed == 0 )) || exit 1
-echo "Проверки возможностей и защит пройдены. Контроллер памяти MEMCG остаётся отключённым из-за неполной реализации в этом дереве."
+echo "Проверки повседневной конфигурации и защит пройдены. Контроллер памяти MEMCG остаётся отключённым из-за неполной реализации в этом дереве."

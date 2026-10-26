@@ -2,13 +2,13 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "Собрать экспериментальное ядро stone",
+			"label": "Собрать повседневное ядро stone",
 			"type": "shell",
 			"command": "bash",
 			"args": [
 				"tools/build-stone.sh",
 				"${workspaceFolder}/validation/clang-r563880c/bin",
-				"${workspaceFolder}/validation/stone-android21"
+				"${workspaceFolder}/validation/stone-daily"
 			],
 			"isBackground": false,
 			"problemMatcher": [

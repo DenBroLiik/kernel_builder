@@ -1,80 +1,51 @@
-# Eclipse Multifunction для POCO X5 5G
+# Eclipse Daily для POCO X5 5G
 
-Экспериментальное ядро семейства stone (stone/moonstone/sunstone).
-**Не подходит для Redmi 7A/pine и других семейств.** Полная сборка и ZIP
-не подтверждают, что ядро загрузится с конкретной прошивкой.
+Ядро Linux 5.4.304 для семейства stone/moonstone/sunstone и совместимых AOSP ROM.
+Новая конфигурация ещё не проверена на телефоне. Установщик сохраняет ограничения
+на устройство и версии Android; сборщик ничего не прошивает.
 
-Добавлены внешний Wi-Fi RTL8811CU/RTL8821CU и другие USB-драйверы,
-USB Bluetooth, SMB/NFS, SquashFS, пространства имён и дополнительные cgroups.
-Частоты, напряжения, термолимиты и зарядные токи не повышались.
+Удалены дополнения из коммита `132e475606fb` отдельного репозитория `kernel`:
+внешние Wi-Fi/Bluetooth, дополнительные USB-модемы/UART/принтеры, SMB/NFS/SquashFS
+и контейнерные функции. Также отключены HID/MIDI/ISO gadget-функции и удалены
+скрипты их настройки. Штатные ADB/MTP и драйверы телефона сохраняются.
+
+Сохранены KernelSU с исправлением хуков, ARM64 mitigations, термозащиты,
+SELinux, schedutil, idle, ThinLTO, zram/writeback, WireGuard и штатные частоты.
+Тестовые USB-контроллеры, thermal emulation и Simple LMK отключены.
+Отладочный ZRAM_MEMORY_TRACKING отключён: на ARM64 убирается 8-байтная временная
+метка для каждой логической страницы zram и её обновление при обращении.
+При страницах 4 KiB это около 2 MiB таблицы на 1 GiB логического размера zram.
+Idle marking и writeback имеют реализацию без tracking и сохраняются.
+Изменение автономности/скорости на устройстве не измерялось.
 
 ## Сборка
 
-Нужны Linux x86_64, полный LLVM toolchain, gcc для host-инструментов,
-make, flex, bison, OpenSSL development headers, bc, dtc, zip/unzip.
-Все изменения ядра находятся в отдельном Git-репозитории [kernel](kernel/).
-Скрипт не скачивает и не исполняет удалённый код.
+Нужны Linux x86_64, Android Clang r563880c, gcc, make, flex, bison,
+OpenSSL development headers, bc, dtc, zip/unzip.
 
 ```sh
-# Русское меню с выбором возможностей:
-bash build.sh
-
-# На компьютере, из каталога проекта. Сохранить исходные настройки KernelSU:
-COMPILER_PATH="$PWD/validation/clang-r563880c/bin" bash build.sh --build
-
-# Явно собрать без KernelSU:
-COMPILER_PATH="$PWD/validation/clang-r563880c/bin" KSU_MODE=n bash build.sh --build
+bash build.sh                          # русское меню
+bash build.sh --config                 # итоговая конфигурация и проверки
+JOBS=4 bash build.sh --build            # ядро и ZIP
+KSU_MODE=n JOBS=4 bash build.sh --build # явно без KernelSU
+bash tests/test-tools.sh validation/stone-daily/.config
 ```
 
-KernelSU по умолчанию включается собственным Kconfig дерева; `KSU_MODE=keep`
-сохраняет этот выбор, `y` включает, `n` отключает. Сборка без KernelSU
-не делает root-утилиты телефона доступными без другого способа root.
-Для этой интеграции недостаточно одного CONFIG_KSU=y: нужен механизм хуков.
-В исходной конфигурации явно включён CONFIG_KSU_HACK_ARM64_BRANCH_LINK=y,
-как в первоначальном сборщике. Проверка отклоняет KernelSU без хуков или без
-LSM-интеграции. Пакеты помечаются KSU либо NoKSU в имени файла.
+Компилятор: `validation/clang-r563880c/bin` или `COMPILER_PATH`.
+KernelSU: `KSU_MODE=keep|y|n`; по умолчанию настройки дерева.
+Результаты: `validation/stone-daily`, ZIP и SHA256: `artifacts/`.
+Старые сборки сохраняются. Упаковка проверяет итоговую конфигурацию, контрольные
+суммы и соответствие исходникам. ZIP помечен EXPERIMENTAL до проверки загрузки.
 
-[build.sh](build.sh) останавливается при ошибке, проверяет итоговую конфигурацию,
-сохраняет логи и результаты и упаковывает только успешно собранный образ.
-Предыдущий рабочий `kernel/out` не очищается. ZIP получает метку EXPERIMENTAL.
-Скрипт ничего не прошивает. Результаты: `artifacts/`, логи: `validation/`.
-В меню есть отдельные переключатели USB Wi-Fi, USB Bluetooth, SMB/NFS/SquashFS,
-контейнерных функций и USB HID/MIDI/ISO. Выбор применяется к конкретной сборке
-и сохраняется в FEATURES.env; исходный defconfig не переписывается.
-Пункт проверки конфигурации позволяет проверить выбор без долгой компиляции.
+## Проверка на телефоне
 
-## Проверка и восстановление
+До установки сохранить подходящие прошивке boot/DTBO и проверить доступ в recovery.
+`bash tools/backup-stone.sh SERIAL` читает резервные копии через ADB при наличии root.
+После установки проверить загрузку, root, связь/Wi-Fi/Bluetooth, камеру, звук,
+зарядку, сон/пробуждение, затем сравнить нагрев и расход батареи в одинаковых условиях.
+`tools/phone-report.sh` собирает диагностический отчёт без настройки частот.
 
-1. Подключить именно POCO и проверить его ADB serial, модель, прошивку и слот.
-2. При наличии root сохранить оба boot-слота и доступные служебные разделы:
-   `bash tools/backup-stone.sh СЕРИЙНЫЙ_НОМЕР_POCO`.
-   Скрипт читает разделы на компьютер и проверяет размер и SHA256 копий.
-3. До установки проверить доступ к bootloader/recovery и иметь подходящие
-   для установленной прошивки исходные образы и способ их восстановления.
-   Проверка устройства и размера образа в AnyKernel не является тестом загрузки.
-4. Сначала провести тест загрузки и основных функций, затем сон/пробуждение,
-   автономность, сеть и периферию. Не объявлять сборку стабильной до этих тестов.
+## Переход на 6.x
 
-## Утилиты
-
-| Файл | Назначение |
-| --- | --- |
-| [phone-report.sh](tools/phone-report.sh) | Снимок состояния питания, памяти, USB, сети и журналов; без изменения настроек |
-| [phone-usb.sh](tools/phone-usb.sh) | Временные HID/MIDI/ISO-функции с сохранением существующих USB-функций и откатом |
-| [phone-power.sh](tools/phone-power.sh) | Штатное энергосбережение Android и восстановление прежнего режима |
-| [phone-netfs.sh](tools/phone-netfs.sh) | Подключение SMB3/NFSv4 только для чтения |
-| [backup-stone.sh](tools/backup-stone.sh) | Чтение резервных копий разделов POCO на компьютер |
-| [build-stone.sh](tools/build-stone.sh) | Сборка Image/DTB/DTBO без упаковки и прошивки |
-| [package-stone.sh](tools/package-stone.sh) | Проверка хешей и упаковка успешной сборки |
-
-Применение и ограничения описаны в [USB_SUPPORT.md](USB_SUPPORT.md).
-Команды проверки утилит на компьютере:
-
-```sh
-bash tests/test-tools.sh
-bash tools/check-feature-config.sh validation/stone-final/.config
-```
-
-Тесты configfs и энергосбережения используют имитацию интерфейсов и не заменяют
-тест на POCO. Программы Android для ввода HID, MIDI, Wi-Fi HAL, BlueZ и
-контейнерный runtime не входят в ядро.
+См. `kernel/Documentation/stone-daily.md`. Это отдельный перенос аппаратной
+поддержки и согласование с ROM, а не смена номера версии или установка GKI ZIP.

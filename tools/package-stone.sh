@@ -9,7 +9,7 @@ out=$(cd -- "${1:?Укажите каталог успешной сборки}" 
     echo 'Исходники ядра изменились после сборки. Сначала пересоберите ядро.' >&2
     exit 1
 }
-bash "$root/tools/check-feature-config.sh" "$out/.config" "$out/FEATURES.env"
+bash "$root/tools/check-feature-config.sh" "$out/.config"
 magic=$(od -An -tx1 -j56 -N4 "$out/arch/arm64/boot/Image" | tr -d ' \n')
 [[ "$magic" == 41524d64 ]] || { echo "Файл не является ARM64 Linux Image." >&2; exit 1; }
 mkdir -p "$root/artifacts"
@@ -21,17 +21,17 @@ cp "$out/arch/arm64/boot/dtb.img" "$stage/dtb"
 cp "$out/arch/arm64/boot/dtbo.img" "$stage/dtbo.img"
 cp "$out/.config" "$stage/kernel.config"
 cp "$out/BUILD-INFO.txt" "$stage/BUILD-INFO.txt"
-cp "$out/FEATURES.env" "$stage/FEATURES.env"
+
 cp "$out/SOURCE-ID" "$stage/SOURCE-ID"
-sed -i 's/^kernel.string=.*/kernel.string=Eclipse Multifunction EXPERIMENTAL stone/' "$stage/anykernel.sh"
+sed -i 's/^kernel.string=.*/kernel.string=Eclipse Daily EXPERIMENTAL stone/' "$stage/anykernel.sh"
 grep -qx 'do.devicecheck=1' "$stage/anykernel.sh"
 grep -qx 'do.modules=0' "$stage/anykernel.sh"
 variant=NoKSU
 if grep -qx 'CONFIG_KSU=y' "$out/.config"; then variant=KSU; fi
-archive="$root/artifacts/Eclipse-Multifunction-EXPERIMENTAL-$variant-stone-$(date -u +%Y%m%dT%H%M%SZ).zip"
+archive="$root/artifacts/Eclipse-Daily-EXPERIMENTAL-$variant-stone-$(date -u +%Y%m%dT%H%M%SZ).zip"
 (
     cd -- "$stage"
-    sha256sum Image dtb dtbo.img kernel.config FEATURES.env SOURCE-ID > SHA256SUMS
+    sha256sum Image dtb dtbo.img kernel.config SOURCE-ID > SHA256SUMS
     zip -qr "$archive" . -x '*.git*' 'README*'
 )
 unzip -t "$archive"

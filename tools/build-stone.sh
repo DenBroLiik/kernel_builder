@@ -2,14 +2,13 @@
 # Non-interactive build; retains logs/output and never flashes a device.
 set -euo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-source "$root/tools/features.sh"
 if [[ ${1:-} == --help ]]; then
     echo "Использование: bash tools/build-stone.sh /путь/к/clang/bin [каталог-результата]"
     exit 0
 fi
 toolchain=${1:?Укажите каталог с clang, ld.lld и LLVM-инструментами}
 toolchain=$(cd -- "$toolchain" && pwd)
-out=${2:-"$root/validation/stone-release"}
+out=${2:-"$root/validation/stone-daily"}
 mkdir -p -- "$out"
 out=$(cd -- "$out" && pwd -P)
 case "$out/" in "$root/kernel/"*) echo "Каталог результата должен находиться вне дерева исходников kernel/." >&2; exit 1;; esac
@@ -17,7 +16,6 @@ for tool in clang ld.lld llvm-ar llvm-nm llvm-objcopy llvm-objdump llvm-strip; d
     [[ -x "$toolchain/$tool" ]] || { echo "Отсутствует $toolchain/$tool" >&2; exit 1; }
 done
 rm -f "$out/BUILD-OK"
-feature_save "$out/FEATURES.env"
 source_id=$(bash "$root/tools/kernel-source-id.sh")
 run_logs="$out/logs/$(date -u +%Y%m%dT%H%M%SZ)-$$"
 mkdir -p "$run_logs"
@@ -30,7 +28,6 @@ args=( -C "$root/kernel" "O=$out" ARCH=arm64 CC=clang HOSTCC=gcc LD=ld.lld
     CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu-
     CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 )
 make "${args[@]}" stone_defconfig 2>&1 | tee "$out/configure.log" "$run_logs/configure.log"
-feature_apply "$out/.config" "$root/kernel/scripts/config"
 case ${KSU_MODE:-keep} in
     keep) ;;
     y) "$root/kernel/scripts/config" --file "$out/.config" --enable KSU;;
@@ -38,7 +35,7 @@ case ${KSU_MODE:-keep} in
     *) echo "KSU_MODE должен быть keep, y или n." >&2; exit 2;;
 esac
 make "${args[@]}" olddefconfig 2>&1 | tee -a "$out/configure.log" "$run_logs/configure.log"
-bash "$root/tools/check-feature-config.sh" "$out/.config" "$out/FEATURES.env"
+bash "$root/tools/check-feature-config.sh" "$out/.config"
 if [[ ${CONFIG_ONLY:-0} == 1 ]]; then
     echo "Конфигурация проверена: $out/.config. Компиляция и упаковка не запускались."
     exit 0
@@ -48,7 +45,7 @@ for file in Image dtb.img dtbo.img; do
     [[ -s "$out/arch/arm64/boot/$file" ]] || { echo "Отсутствует результат сборки $file" >&2; exit 1; }
 done
 file "$out/arch/arm64/boot/Image"
-bash "$root/tools/check-feature-config.sh" "$out/.config" "$out/FEATURES.env"
+bash "$root/tools/check-feature-config.sh" "$out/.config"
 [[ "$source_id" == "$(bash "$root/tools/kernel-source-id.sh")" ]] || {
     echo 'Исходники изменились во время сборки. Результат не помечен как успешный; повторите сборку.' >&2
     exit 1
@@ -56,7 +53,7 @@ bash "$root/tools/check-feature-config.sh" "$out/.config" "$out/FEATURES.env"
 printf '%s\n' "$source_id" > "$out/SOURCE-ID"
 (
     cd -- "$out"
-    sha256sum arch/arm64/boot/Image arch/arm64/boot/dtb.img arch/arm64/boot/dtbo.img .config FEATURES.env SOURCE-ID > SHA256SUMS
+    sha256sum arch/arm64/boot/Image arch/arm64/boot/dtb.img arch/arm64/boot/dtbo.img .config SOURCE-ID > SHA256SUMS
     {
         date -u
         clang --version
