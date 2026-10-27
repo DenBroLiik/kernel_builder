@@ -32,11 +32,21 @@ grep -q 'KernelSU включён без механизма хуков' "$test_di
 "$root/kernel/scripts/config" --file "$test_dir/root-without-hooks.config" --disable KSU
 bash "$root/tools/check-feature-config.sh" "$test_dir/root-without-hooks.config" >/dev/null
 echo 'PASS: rootless KernelSU configuration is rejected; intentionally disabled KernelSU is allowed'
-for symbol in USB_CONFIGFS_F_HID MAC80211 CIFS ZRAM_MEMORY_TRACKING; do
+for symbol in ZRAM_MEMORY_TRACKING USER_NS MEMCG; do
     cp "$config" "$test_dir/experimental.config"
     "$root/kernel/scripts/config" --file "$test_dir/experimental.config" --enable "$symbol"
     if bash "$root/tools/check-feature-config.sh" "$test_dir/experimental.config" >/dev/null 2>&1; then
-        echo "FAIL: removed feature $symbol accepted" >&2; exit 1
+        echo "FAIL: unsupported option $symbol accepted" >&2; exit 1
     fi
 done
-echo 'PASS: daily profile rejects removed experimental features and zram tracking'
+echo 'PASS: restored feature profile rejects unsupported options and zram tracking'
+python3 "$root/kernel/tools/testing/selftests/cpufreq/sugov-regression.py"
+python3 "$root/kernel/tools/testing/selftests/net/wlan-coex-regression.py"
+python3 "$root/tests/test-lz4.py"
+python3 "$root/tests/test-zstd-zram.py"
+python3 "$root/tests/test-zsmalloc-compaction.py"
+python3 "$root/tests/test-wlan-concurrency.py"
+python3 "$root/tests/test-btc-chain-mode.py"
+python3 "$root/tests/test-lpm-control.py"
+python3 "$root/tests/test-zram-block-allocator.py"
+python3 "$root/tests/test-zram-slots.py"
