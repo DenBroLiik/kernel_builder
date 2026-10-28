@@ -22,18 +22,19 @@ authentication or proof of compatibility with the current ROM.
 The failed repack preserved the running kernel instead and omitted the AVB
 footer. That is a material format difference, not an established root cause.
 The running kernel's extracted config supports both gzip and LZ4 ramdisks.
-The user has not tested the unchanged donor on the current Android 17;
-reports from other users are not treated as a successful test on this phone.
-No new recovery image was flashed during this comparison. The failed
-prototype remains disabled; the original donor is retained separately for
-a controlled baseline test with the existing original-boot rollback.
+Reports from other users are not treated as a successful test on this phone.
+The failed prototype remains disabled. The original donor was subsequently
+tested as described below, using the existing original-boot rollback.
 
-**The unchanged donor was subsequently tested too and the user reported a
-boot loop.** The original boot_a was restored again; Android boot completion
+**The unchanged donor failed ordinary Android startup: the user reported a
+boot loop and clarified that this occurred on normal power-on.** A deliberate
+Recovery-mode launch of that donor has not yet been confirmed. This is not
+proof that its Recovery UI cannot boot, nor proof of decryption compatibility.
+It is also not a usable daily boot image in the tested state.
+The original boot_a was restored again; Android boot completion
 and slot _a were then confirmed by ADB. With authorized root access, pstore
 was empty, /proc/last_kmsg was absent and recovery log directories had no
-saved log. There is no failure trace establishing a cause. Exact recovery
-versus normal-system boot mode for this test has not yet been confirmed.
+saved log. There is no failure trace establishing a cause.
 The extracted original image is now marked `.img.disabled` locally as well;
 the user-supplied ZIP remains untouched. No repeated flash attempts or
 working-compatibility claims should be based on this donor. Neither its
