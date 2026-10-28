@@ -32,13 +32,19 @@ prefix = r'''
 #define unlikely(x) (x)
 #define RMNET_PAGE_RECYCLE 1
 #define RMNET_EGRESS_FORMAT_PRIORITY 2
+#define RMNET_EGRESS_FORMAT_AGGREGATION 4
 #define GFP_ATOMIC 0
 #define ETH_P_MAP 1
 #define HRTIMER_MODE_REL 0
 #define htons(x) (x)
 #define ns_to_ktime(x) (x)
-#define spin_lock_irqsave(lock, flags) ((void)(flags = 0))
-#define spin_unlock_irqrestore(lock, flags) ((void)(flags))
+static void (*unlock_hook)(void);
+static void test_unlock(int *lock) {
+    assert(*lock == 1); *lock = 0;
+    if (unlock_hook) { void (*hook)(void) = unlock_hook; unlock_hook = NULL; hook(); }
+}
+#define spin_lock_irqsave(lock, flags) do { flags = 0; assert(!*(lock)); *(lock) = 1; } while (0)
+#define spin_unlock_irqrestore(lock, flags) do { (void)(flags); test_unlock(lock); } while (0)
 struct list_head { struct list_head *next, *prev; };
 #define list_entry(p, type, member) ((type *)((char *)(p) - offsetof(type, member)))
 #define list_next_entry(p, member) list_entry((p)->member.next, __typeof__(*(p)), member)
@@ -83,10 +89,9 @@ static struct sk_buff *rmnet_map_build_skb(struct rmnet_port *p) {
     (void)p; buffer = (struct sk_buff){.room = 4096}; return &buffer;
 }
 static void rmnet_map_linearize_copy(struct sk_buff *d, struct sk_buff *s) { d->len += s->len; }
-static void rmnet_map_send_agg_skb(struct rmnet_port *p, unsigned long flags) {
-    (void)flags; if (p->agg_skb) sends++; p->agg_skb = NULL; p->agg_count = p->agg_state = 0;
-}
-static void hrtimer_start(int *t, long ns, int mode) { (void)t; (void)ns; (void)mode; timers++; }
+static struct rmnet_port *rmnet_get_port(void *dev) { return dev; }
+static void hrtimer_start(int *t, long ns, int mode) { *t = 1; (void)ns; (void)mode; timers++; }
+static void hrtimer_cancel(int *t) { *t = 0; }
 '''
 main = r'''
 static void pool_test(int count, int busy) {
@@ -138,19 +143,58 @@ static void timing_test(void) {
     rmnet_map_tx_aggregate(&packet, &p);
     assert(sends == 2 && p.agg_count == 1); /* Normal age flush still works. */
 }
+static struct rmnet_port *interleaved_port;
+static void start_next_aggregate(void) {
+    struct sk_buff packet = {.len = 100};
+    rmnet_map_tx_aggregate(&packet, interleaved_port);
+}
+static void cancellation_race_test(bool command) {
+    struct sk_buff old = {.len = 100};
+    struct rmnet_port p = {
+        .egress_agg_params = {.agg_size = 4096, .agg_count = 20, .agg_time = 3000000},
+        .data_format = RMNET_EGRESS_FORMAT_AGGREGATION,
+        .agg_skb = &old, .agg_count = 1, .agg_state = -EINPROGRESS, .hrtimer = 1
+    };
+    mono = 1000000000L; p.agg_last = stamp(mono - 100000);
+    sends = timers = 0;
+    interleaved_port = &p;
+    /* A second producer acquires agg_lock at the first unlock. */
+    unlock_hook = start_next_aggregate;
+    if (command) {
+        struct sk_buff cmd = {.dev = &p};
+        rmnet_map_tx_qmap_cmd(&cmd);
+    } else {
+        unsigned long flags;
+        spin_lock_irqsave(&p.agg_lock, flags);
+        rmnet_map_send_agg_skb(&p, flags);
+    }
+    assert(p.agg_skb && p.agg_count == 1 && p.agg_state == -EINPROGRESS);
+    assert(p.hrtimer == 1 && timers == 1); /* New batch still has a flush timer. */
+    assert(sends == (command ? 2 : 1) && !p.agg_lock);
+}
+static void empty_flush_test(void) {
+    struct rmnet_port p = {.data_format = RMNET_EGRESS_FORMAT_AGGREGATION};
+    struct sk_buff cmd = {.dev = &p};
+    sends = 0;
+    rmnet_map_tx_qmap_cmd(&cmd);
+    assert(sends == 1 && !p.agg_lock && !p.hrtimer);
+}
 int main(void) {
     for (int n = 0; n <= 8; n++) { pool_test(n, 0); pool_test(n, 1); }
     allocation_fail = 1;
     struct rmnet_port empty = {0};
     assert(!rmnet_get_agg_pages(&empty));
     timing_test();
-    puts("PASS: RMNET recycled-page wrap, busy/empty pools, bounded search, allocation failure, clock jumps and age flush");
+    cancellation_race_test(false);
+    cancellation_race_test(true);
+    empty_flush_test();
+    puts("PASS: RMNET recycled-page wrap, busy/empty pools, bounded search, allocation failure, clock jumps, age flush and interleaved data/QMAP timer cancellation");
     return 0;
 }
 '''
 
 with tempfile.TemporaryDirectory(prefix="rmnet-test-") as work:
     cfile, binary = Path(work) / "test.c", Path(work) / "test"
-    cfile.write_text(prefix + function("rmnet_get_agg_pages") + function("rmnet_map_tx_aggregate") + main)
+    cfile.write_text(prefix + function("rmnet_get_agg_pages") + function("rmnet_map_send_agg_skb") + function("rmnet_map_tx_aggregate") + function("rmnet_map_tx_qmap_cmd") + main)
     subprocess.run(["cc", "-std=gnu11", "-O1", "-g", "-fsanitize=undefined", "-Wall", "-Wextra", "-Wno-unused-function", str(cfile), "-o", str(binary)], check=True)
     subprocess.run([str(binary)], check=True)
