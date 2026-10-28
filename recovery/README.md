@@ -39,6 +39,17 @@ the user-supplied ZIP remains untouched. No repeated flash attempts or
 working-compatibility claims should be based on this donor. Neither its
 AVB-footer differences nor Android decryption are established as the cause.
 
+Source audit: the maintainer's public recovery tree at commit
+`9d54b30d5596f761572d0d6c93d74ff25ba7e7b7` (2025-11-23) is also not a
+drop-in match for the observed current ROM. Its BoardConfig selects boot
+header v4, BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT and
+BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT, disables recovery-as-boot,
+and vendorsetup.sh targets vendorbootimage while cloning kernel branch 16.
+The actual current ROM backup has boot/vendor_boot header v3 and recovery
+resources in boot. Do not build or flash that public master unchanged as a
+fix. This mismatch does not establish the cause of the old ZIP's boot loop.
+Source: https://github.com/bittencourtjulival/recovery_device_xiaomi_stone/tree/9d54b30d5596f761572d0d6c93d74ff25ba7e7b7
+
 Historical prototype description:
 
 This is a host-only ramdisk adaptation tool, not a recovery source build or
