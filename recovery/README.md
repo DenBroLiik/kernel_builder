@@ -10,6 +10,24 @@ successful device boot. A new source-based port/diagnosis is required before
 another device attempt; replacing the boot ramdisk is not sufficient evidence
 of Android 17 compatibility. Nothing here is a working recovery release.
 
+The user identified the failure as the POCO/MI splash, before any OrangeFox
+UI was observed. A subsequently supplied maintainer ZIP (SHA256
+ee80b52ddcbc463ec3326ada35b530b64e27518cee275e5bbe9e3731fae829c0) contains
+the same byte-identical donor recovery.img already used by the prototype.
+It is not a different recovery build. The unchanged donor has its own kernel,
+boot-v3 header, twrpfastboot=1 cmdline, a full 128 MiB partition image and
+an AVB footer; avbtool verifies its self-contained SHA256 descriptor with
+Algorithm NONE. This is structural integrity, not signature-based author
+authentication or proof of compatibility with the current ROM.
+The failed repack preserved the running kernel instead and omitted the AVB
+footer. That is a material format difference, not an established root cause.
+The running kernel's extracted config supports both gzip and LZ4 ramdisks.
+The user has not tested the unchanged donor on the current Android 17;
+reports from other users are not treated as a successful test on this phone.
+No new recovery image was flashed during this comparison. The failed
+prototype remains disabled; the original donor is retained separately for
+a controlled baseline test with the existing original-boot rollback.
+
 Historical prototype description:
 
 This is a host-only ramdisk adaptation tool, not a recovery source build or
