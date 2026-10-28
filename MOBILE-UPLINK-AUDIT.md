@@ -68,3 +68,32 @@ established. A simultaneous capture of TX queue backlog, driver stall logs,
 radio state and app/network events during the failure is still needed to
 distinguish driver, radio, operator path and application failure. No APN,
 radio, DNS, audio setting, modem firmware or phone partition was changed.
+
+## Follow-up: IPA transmit ownership and error cleanup
+
+Kernel commit 89c960d46530 fixes two issues in ipa3_wwan_xmit:
+
+- On successful submission, IPA completion owns and frees the skb. Completion
+  on another CPU may happen before ipa3_tx_dp returns, so reading skb->len
+  afterwards is a use-after-free. Cache the length before submission and use
+  that value for successful TX accounting. The IPA API ownership contract and
+  completion callbacks are in ipa_v3/ipa_dp.c and rmnet_ipa.c.
+- On -EPIPE, the transmit function decrements outstanding_pkts and frees the
+  rejected packet, but used to return before the common idle PM cleanup.
+  Route that error through the existing cleanup label: when no TX packets
+  remain, request deferred deactivation for both the WWAN and modem PM clients.
+  Leave those clients active when other packets remain outstanding.
+
+tests/test-ipa-uplink.py compiles the actual TX function with AddressSanitizer
+and UndefinedBehaviorSanitizer. It simulates completion before submit returns;
+the original code independently fails with heap-use-after-free. A second
+baseline run skips that case and demonstrates missing PM cleanup on -EPIPE.
+The corrected function passes both, plus busy/retry packet ownership,
+suspend, asynchronous activation, backpressure, ordinary asynchronous TX
+and the invalid-pipe case with other packets still outstanding.
+
+The completion is deliberately forced early by a host stub; this verifies
+the ownership hazard, not its occurrence on the phone. PM cleanup verifies
+the request to release activity, not a measured reduction in power use.
+Neither finding establishes the cause of the WhatsApp reconnection symptom.
+The fixes do not reset the modem or bypass its flow-control limits.
