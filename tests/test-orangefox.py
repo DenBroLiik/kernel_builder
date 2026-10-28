@@ -4,6 +4,7 @@
 import importlib.util
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
@@ -51,4 +52,14 @@ with tempfile.TemporaryDirectory(prefix="orangefox-test-") as work:
     rejected(lambda: adapter.adapt_fstab(old, current + current))
     rejected(lambda: adapter.adapt_fstab(old, current.replace("fileencryption=", "removed=")))
     rejected(lambda: adapter.adapt_fstab(old, current.replace("f2fs", "ext4")))
+    output = base / "must-not-be-created"
+    blocked = subprocess.run([sys.executable, str(root / "tools/prepare-orangefox.py"),
+                              "--device", "moonstone", "--boot", str(base / "missing-boot.img"),
+                              "--expected-boot-sha256", "0" * 64,
+                              "--orangefox", str(base / "missing-fox.img"),
+                              "--fstab", str(base / "missing-fstab"), "--output", str(output)],
+                             capture_output=True, text=True)
+    assert blocked.returncode == 2 and "отключена" in blocked.stderr
+    assert not output.exists()
 print("PASS: real cpio interoperability, executable mode, symlink, truncated inputs and encryption-preserving fstab adaptation")
+print("PASS: known-failing recovery prototype cannot generate another image")

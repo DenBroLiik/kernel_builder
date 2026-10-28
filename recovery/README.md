@@ -1,5 +1,17 @@
 # OrangeFox: moonstone adaptation prototype
 
+**DEVICE BOOT FAILED. DO NOT FLASH THIS PROTOTYPE.** On 2026-10-28 the user
+reported a splash hang after flashing the candidate to boot_a, then restored
+the original boot_a. Android boot completion was subsequently observed by ADB.
+The cause is not established. Image generation is now disabled in the CLI,
+and the failed local artifact has been renamed to `.img.disabled`.
+The archive tests below validate host tooling only; they did not predict
+successful device boot. A new source-based port/diagnosis is required before
+another device attempt; replacing the boot ramdisk is not sufficient evidence
+of Android 17 compatibility. Nothing here is a working recovery release.
+
+Historical prototype description:
+
 This is a host-only ramdisk adaptation tool, not a recovery source build or
 an installer. It never invokes adb, fastboot, writes a phone partition or
 modifies the donor images. No flashable ZIP is produced.

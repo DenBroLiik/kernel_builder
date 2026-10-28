@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0
-"""Host-only boot-v3 ramdisk adaptation. No flashing or adb operations."""
+"""Disabled legacy prototype: device boot hung. No flashing or adb operations."""
 import argparse
 import gzip
 import hashlib
@@ -99,6 +99,7 @@ def main():
     parser.add_argument("--fstab", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    parser.exit(2, "Эта адаптация OrangeFox отключена: проверка на moonstone завершилась зависанием на заставке. Не генерируйте и не прошивайте этот прототип.\n")
     boot, fox = args.boot.read_bytes(), args.orangefox.read_bytes()
     if digest(boot) != args.expected_boot_sha256 or digest(fox) != BASE_FOX_SHA256:
         raise ValueError("Input image checksum mismatch")
