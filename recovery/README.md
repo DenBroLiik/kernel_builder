@@ -28,6 +28,17 @@ No new recovery image was flashed during this comparison. The failed
 prototype remains disabled; the original donor is retained separately for
 a controlled baseline test with the existing original-boot rollback.
 
+**The unchanged donor was subsequently tested too and the user reported a
+boot loop.** The original boot_a was restored again; Android boot completion
+and slot _a were then confirmed by ADB. With authorized root access, pstore
+was empty, /proc/last_kmsg was absent and recovery log directories had no
+saved log. There is no failure trace establishing a cause. Exact recovery
+versus normal-system boot mode for this test has not yet been confirmed.
+The extracted original image is now marked `.img.disabled` locally as well;
+the user-supplied ZIP remains untouched. No repeated flash attempts or
+working-compatibility claims should be based on this donor. Neither its
+AVB-footer differences nor Android decryption are established as the cause.
+
 Historical prototype description:
 
 This is a host-only ramdisk adaptation tool, not a recovery source build or
