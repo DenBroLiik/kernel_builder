@@ -3,6 +3,10 @@ set -euo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 if [[ ${1:-} == --help ]]; then echo "Использование: bash tools/package-stone.sh каталог-успешной-сборки"; exit 0; fi
 out=$(cd -- "${1:?Укажите каталог успешной сборки}" && pwd)
+if grep -qx 'CONFIG_MODULES=y' "$out/.config"; then
+    echo 'Этот установщик не устанавливает модули. Профиль ZFS пока нельзя упаковать в daily ZIP.' >&2
+    exit 1
+fi
 [[ -f "$out/BUILD-OK" && -f "$out/BUILD-INFO.txt" && -f "$out/SHA256SUMS" ]] || { echo "Сначала успешно выполните tools/build-stone.sh." >&2; exit 1; }
 (cd -- "$out" && sha256sum -c SHA256SUMS)
 [[ "$(cat "$out/SOURCE-ID")" == "$(bash "$root/tools/kernel-source-id.sh")" ]] || {

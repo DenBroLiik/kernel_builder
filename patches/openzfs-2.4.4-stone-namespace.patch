@@ -1,0 +1,20 @@
+diff --git a/module/os/linux/spl/spl-generic.c b/module/os/linux/spl/spl-generic.c
+index 585ad73..3238550 100644
+--- a/module/os/linux/spl/spl-generic.c
++++ b/module/os/linux/spl/spl-generic.c
+@@ -619,4 +619,5 @@ module_exit(spl_fini);
+ MODULE_DESCRIPTION("Solaris Porting Layer");
+ MODULE_AUTHOR(ZFS_META_AUTHOR);
+ MODULE_LICENSE("GPL");
++MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
+ MODULE_VERSION(ZFS_META_VERSION "-" ZFS_META_RELEASE);
+diff --git a/module/os/linux/zfs/zfs_ioctl_os.c b/module/os/linux/zfs/zfs_ioctl_os.c
+index 5421a44..64a0566 100644
+--- a/module/os/linux/zfs/zfs_ioctl_os.c
++++ b/module/os/linux/zfs/zfs_ioctl_os.c
+@@ -383,4 +383,5 @@ MODULE_AUTHOR(ZFS_META_AUTHOR);
+ MODULE_LICENSE("Dual MIT/GPL"); /* lua */
+ MODULE_LICENSE("Dual BSD/GPL"); /* zstd / misc */
+ MODULE_LICENSE(ZFS_META_LICENSE);
++MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
+ MODULE_VERSION(ZFS_META_VERSION "-" ZFS_META_RELEASE);

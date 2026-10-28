@@ -1,3 +1,5 @@
 kernel/
 /validation/
 /artifacts/
+__pycache__/
+*.py[cod]
