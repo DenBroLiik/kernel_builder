@@ -1,0 +1,6 @@
+id=auto_swap_4gb
+name=Auto Swap 2GiB Smart
+version=2.1.0
+versionCode=210
+author=DenBroLiik
+description=2GiB intelligent swap: LZ4 zram when safe, or low-priority disk swap; protects Android's own zram.
