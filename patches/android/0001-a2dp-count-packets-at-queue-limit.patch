@@ -1,0 +1,19 @@
+--- a/system/btif/src/btif_a2dp_source.cc
++++ b/system/btif/src/btif_a2dp_source.cc
+@@ -976,12 +976,12 @@
+     return false;
+   }
+ 
+-  // Check for TX queue overflow
+-  // TODO: Using frames_n here is probably wrong: should be "+ 1" instead.
+-  if (fixed_queue_length(btif_a2dp_source_cb.tx_audio_queue) + frames_n >
++  // The queue contains packets. This callback enqueues one packet even
++  // when that packet was produced from several PCM frames.
++  if (fixed_queue_length(btif_a2dp_source_cb.tx_audio_queue) >=
+       btif_a2dp_source_dynamic_audio_buffer_size) {
+     log::warn("TX queue buffer size now={} adding={} max={}",
+-              (uint32_t)fixed_queue_length(btif_a2dp_source_cb.tx_audio_queue), (uint32_t)frames_n,
++              (uint32_t)fixed_queue_length(btif_a2dp_source_cb.tx_audio_queue), 1u,
+               btif_a2dp_source_dynamic_audio_buffer_size);
+     // Keep track of drop-outs
+     btif_a2dp_source_cb.stats.tx_queue_dropouts++;
