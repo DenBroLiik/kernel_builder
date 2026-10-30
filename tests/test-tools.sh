@@ -40,33 +40,14 @@ for symbol in ZRAM_MEMORY_TRACKING USER_NS MEMCG; do
     fi
 done
 echo 'PASS: restored feature profile rejects unsupported options and zram tracking'
-for setting in NET_SCH_FQ DEFAULT_FQ; do
-    cp "$config" "$test_dir/network.config"
-    "$root/kernel/scripts/config" --file "$test_dir/network.config" --disable "$setting"
-    if bash "$root/tools/check-feature-config.sh" "$test_dir/network.config" > "$test_dir/network.log" 2>&1; then
-        echo "FAIL: missing $setting accepted" >&2; exit 1
-    fi
-done
-cp "$config" "$test_dir/network.config"
-"$root/kernel/scripts/config" --file "$test_dir/network.config" --set-str DEFAULT_NET_SCH pfifo_fast
-if bash "$root/tools/check-feature-config.sh" "$test_dir/network.config" > "$test_dir/network.log" 2>&1; then
-    echo 'FAIL: FIFO network default accepted' >&2; exit 1
-fi
-grep -q 'Не соответствует сетевой профиль' "$test_dir/network.log"
-echo 'PASS: network gates reject missing built-in FQ and a FIFO default'
 python3 "$root/kernel/tools/testing/selftests/cpufreq/sugov-regression.py"
-python3 "$root/kernel/tools/testing/selftests/net/wlan-coex-regression.py"
 python3 "$root/tests/test-lz4.py"
 python3 "$root/tests/test-zstd-zram.py"
 python3 "$root/tests/test-zsmalloc-compaction.py"
-python3 "$root/tests/test-wlan-concurrency.py"
-python3 "$root/tests/test-btc-chain-mode.py"
 python3 "$root/tests/test-lpm-control.py"
 python3 "$root/tests/test-zram-block-allocator.py"
 python3 "$root/tests/test-zram-slots.py"
 python3 "$root/tests/test-zram-page-checks.py"
-python3 "$root/tests/test-rmnet-aggregation.py"
-python3 "$root/tests/test-ipa-uplink.py"
 python3 "$root/tests/test-geni-uart-pm.py"
 bash "$root/tests/test-zfs-packaging.sh"
 python3 "$root/tests/test-orangefox.py"

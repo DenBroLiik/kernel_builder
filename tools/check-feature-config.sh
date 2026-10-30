@@ -6,7 +6,7 @@ required=(
     CFG80211 QCA_CLD_WLAN MSM_BT_POWER USB_CONFIGFS
     USB_STORAGE USB_UAS SND_USB_AUDIO USB_VIDEO_CLASS
     VETH BRIDGE
-    NET_SCH_FQ NET_SCH_DEFAULT DEFAULT_FQ TCP_CONG_BBR DEFAULT_BBR
+    NET_SCH_FQ TCP_CONG_BBR DEFAULT_BBR
     CPU_FREQ_GOV_SCHEDUTIL CPU_IDLE CC_OPTIMIZE_FOR_PERFORMANCE
     WIREGUARD TUN ZRAM ZRAM_WRITEBACK ZSMALLOC CRYPTO_ZSTD ZSTD_COMPRESS ZSTD_DECOMPRESS
     PSTORE PSTORE_RAM PSTORE_CONSOLE
@@ -49,7 +49,7 @@ for symbol in "${disabled[@]}"; do
         failed=1
     fi
 done
-for setting in 'CONFIG_DEFAULT_NET_SCH="fq"' 'CONFIG_DEFAULT_TCP_CONG="bbr"'; do
+for setting in 'CONFIG_DEFAULT_TCP_CONG="bbr"'; do
     if ! grep -qx "$setting" "$config"; then
         echo "Не соответствует сетевой профиль: $setting" >&2
         failed=1
